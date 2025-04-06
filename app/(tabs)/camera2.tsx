@@ -3,14 +3,14 @@ import { useRef, useState } from "react";
 import { Button, Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { AntDesign, Entypo } from "@expo/vector-icons";
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from "expo-router";
 
 export default function App() {
     const [permission, requestPermission] = useCameraPermissions();
     const ref = useRef<CameraView>(null);
     const [uri, setUri] = useState<any>(null);
     const [flash, setFlash] = useState<FlashMode>("off");
-    const navigation = useNavigation();
+    const router = useRouter();
 
     if (!permission) {
         return null;
@@ -73,7 +73,7 @@ export default function App() {
                             </View>
                         )}
                     </Pressable>
-                    <Pressable onPress={() => navigation.goBack()}>
+                    <Pressable onPress={() => router.back()}>
                         <AntDesign name="close" size={32} color="white" />
                     </Pressable>
                 </View>
