@@ -8,9 +8,9 @@ export default function CameraTab() {
     const [facing, setFacing] = useState<CameraType>('back');
     const [flash, setFlash] = useState<FlashMode>('off');
 
-    const [torch, setTorch] = useState(false);  // Vaku állapot kezelése
+    const [torch, setTorch] = useState(false);
     const [permission, requestPermission] = useCameraPermissions();
-    const [uri, setUri] = useState<string | null>(null);
+    const [uri, setUri] = useState<any>(null);
     const ref = useRef<CameraView>(null);
     const navigation = useNavigation();
 
