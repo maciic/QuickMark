@@ -37,7 +37,6 @@ export default function App() {
         uri,
         (width, height) => {
           originalImageSize.current = { width, height };
-          console.log('original image size:', width, height);
         },
         (err) => {
           console.warn('failed to get image size', err);
@@ -66,43 +65,11 @@ export default function App() {
     const photo = await ref.current?.takePictureAsync();
     setUri(photo?.uri);
     setPictureTaken(true);
-    console.log(" --- Picture taken: ", pictureTaken);
   };
 
   const toggleFlash = () => {
     setFlash((flash) => (flash === "off" ? "on" : "off"));
   };
-
-  const renderCamera = () => (
-    <CameraView
-      style={styles.camera}
-      ref={ref}
-      flash={flash}
-      mute
-      ratio="16:9"                            // ← still 16:9
-      responsiveOrientationWhenOrientationLocked
-    >
-      <View style={styles.shutterContainer}>
-        <Pressable onPress={toggleFlash}>
-          {flash === "off" ? (
-            <Entypo name="flash" size={32} color="gray" />
-          ) : (
-            <Entypo name="flash" size={32} color="white" />
-          )}
-        </Pressable>
-        <Pressable onPress={takePicture}>
-          {({ pressed }) => (
-            <View style={[styles.shutterBtn, { opacity: pressed ? 0.5 : 1 }]}>
-              <View style={[styles.shutterBtnInner, { backgroundColor: "white" }]} />
-            </View>
-          )}
-        </Pressable>
-        <Pressable onPress={() => router.back()}>
-          <AntDesign name="close" size={32} color="white" />
-        </Pressable>
-      </View>
-    </CameraView>
-  );
 
   const handleLayoutChange = (currentCorners: Corners) => {
     setCropCorners(currentCorners); // Update local state
@@ -142,14 +109,13 @@ export default function App() {
       width: Math.max(1, Math.round(cropWidth)),
       height: Math.max(1, Math.round(cropHeight)),
     };
-    console.log("Calculated Crop Region (Image Coords):", cropRegion);
     // --- End Coordinate Transformation ---
 
     try {
       const result = await ImageManipulator.manipulateAsync(
         uri,
         [{ crop: cropRegion }],
-        { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
+        {compress: 0.1, format: ImageManipulator.SaveFormat.JPEG }
       );
       setCroppedUri(result.uri);
 
@@ -167,7 +133,6 @@ export default function App() {
     }
   };
 
-  // always saves the original unedited picture
   const handleSaveOriginal = async () => {
     if (!uri) return;
 
@@ -182,7 +147,7 @@ export default function App() {
       const result = await ImageManipulator.manipulateAsync(
         uri,
         [],
-        { compress: 0.1, format: ImageManipulator.SaveFormat.JPEG }
+        {compress: 0.1, format: ImageManipulator.SaveFormat.JPEG }
       );
 
       await MediaLibrary.createAssetAsync(result.uri);
@@ -190,6 +155,40 @@ export default function App() {
     } catch (err) {
       console.error("Save failed:", err);
       Alert.alert("Error", "Could not save original image.");
+    }
+  };
+
+  const sendImageToProcess = async () => {
+    if (!uri) return;
+  
+    try {
+      /*
+      // upload to your server
+      const formData = new FormData();
+      formData.append("file", await (await fetch(uri)).blob(), "image.jpg");
+  
+      const res = await fetch("https://your-server-endpoint.com/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  
+      // assume JSON { processedUri: string, ... }
+      const data = await res.json();
+      */
+      // For demo purposes, we will just simulate a successful response
+      const data = {examId: "XYZ987", studentId: "Abc123", pass: true}; // Replace with actual response from your server
+      
+      // navigate to result.tsx with the returned data
+      router.push({
+        pathname: "/result",
+        params: { payload: JSON.stringify(data) }
+      });
+
+      setPictureTaken(false); // Reset the camera view
+    } catch (error) {
+      console.error("Error sending image:", error);
+      Alert.alert("Error", "Failed to send image.");
     }
   };
 
@@ -215,16 +214,56 @@ export default function App() {
 
       {/* Controls */}
       <View style={styles.buttonContainer}>
+        <Button title="New picture" onPress={() => setPictureTaken(false)} />
         <Button title="Crop Image" onPress={handleCrop} disabled={!cropCorners} />
         <Button title="Save Image" onPress={handleSaveOriginal} disabled={!uri} />
-        <Button title="Back" onPress={() => router.back()} />
+        <Button title="Send Image" onPress={sendImageToProcess} disabled={!uri} />
       </View>
     </SafeAreaView>
   );
 
   return (
     <View style={styles.container}>
-      {pictureTaken ? cropImageView() : renderCamera()}
+      {/* Camera is rendered from the start, but hidden until a picture is taken*/}
+      <CameraView
+        style={[
+          styles.camera,
+          {
+            opacity: pictureTaken ? 0.3 : 1,
+            zIndex: pictureTaken ? 0 : 1
+          }
+        ]}
+
+        ref={ref}
+        flash={flash}
+        mute
+        ratio="16:9"
+        responsiveOrientationWhenOrientationLocked
+      >
+        <View style={styles.shutterContainer}>
+          <Pressable onPress={toggleFlash}>
+            {flash === "off" ? (
+              <Entypo name="flash" size={32} color="gray" />
+            ) : (
+              <Entypo name="flash" size={32} color="white" />
+            )}
+          </Pressable>
+          <Pressable onPress={takePicture}>
+            {({ pressed }) => (
+              <View style={[styles.shutterBtn, { opacity: pressed ? 0.5 : 1 }]}>
+                <View style={[styles.shutterBtnInner, { backgroundColor: "white" }]} />
+              </View>
+            )}
+          </Pressable>
+          <Pressable onPress={() => router.back()}>
+            <AntDesign name="close" size={32} color="white" />
+          </Pressable>
+        </View>
+      </CameraView>
+
+      {/* Only show crop UI on top once a picture is taken */}
+      {pictureTaken && cropImageView()}
+
     </View>
   );
 }
@@ -237,6 +276,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   camera: {
+    position: "absolute",
+    top: "7%",
+    left: 0,
     width: "100%",
     aspectRatio: 9 / 16,    // width:height = 9:16
   },
@@ -275,6 +317,7 @@ const styles = StyleSheet.create({
     aspectRatio: 9 / 16,    // match preview aspect ratio
     position: "relative",
     overflow: "hidden",
+    zIndex: 1,
   },
   image: {
     width: "100%",
