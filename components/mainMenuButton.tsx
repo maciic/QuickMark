@@ -8,10 +8,10 @@ type Props = {
 
 export default function MainMenuButton({ title, icon, onPress }: Props) {
     return (
-        <View style={[styles.buttonContainer]}>
-            <Pressable style={[styles.button]} onPress={onPress}>
+        <View style={styles.buttonContainer}>
+            <Pressable style={styles.button} onPress={onPress}>
                 <View style={styles.buttonIcon}>{icon}</View>
-                <Text style={[styles.buttonLabel]}>{title}</Text>
+                <Text style={styles.buttonLabel}>{title}</Text>
             </Pressable>
         </View>
 

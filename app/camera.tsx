@@ -2,10 +2,11 @@ import { CameraView, FlashMode, useCameraPermissions } from "expo-camera";
 import { useRef, useState, useEffect } from "react";
 import { Button, Pressable, StyleSheet, SafeAreaView, Dimensions, Alert, Text, View, Image as RNImage } from "react-native";
 import { Image } from "expo-image";
-import { AntDesign, Entypo } from "@expo/vector-icons";
+import { AntDesign, Entypo, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as ImageManipulator from 'expo-image-manipulator';
-import * as MediaLibrary from "expo-media-library";    // <-- added
+import * as MediaLibrary from "expo-media-library";   
+import SimpleButton from '../components/simpleButton'; 
 
 // Import the frame-only overlay component and its Corners type
 import CropOverlayFrameOnly, { Corners } from '../components/CropOverlay'; // Adjust path if needed
@@ -193,7 +194,7 @@ export default function App() {
   };
 
   const cropImageView = () => (
-    <SafeAreaView style={styles.container2}>
+    <SafeAreaView style={styles.cropContainer}>
       {/* Container for the image and overlay */}
       <View style={styles.imageContainer}>
         {/* Display the background image */}
@@ -214,10 +215,10 @@ export default function App() {
 
       {/* Controls */}
       <View style={styles.buttonContainer}>
-        <Button title="New picture" onPress={() => setPictureTaken(false)} />
-        <Button title="Crop Image" onPress={handleCrop} disabled={!cropCorners} />
-        <Button title="Save Image" onPress={handleSaveOriginal} disabled={!uri} />
-        <Button title="Send Image" onPress={sendImageToProcess} disabled={!uri} />
+        <Feather name="corner-down-left" size={36} color="white" onPress={() => setPictureTaken(false)} style={{ marginHorizontal: 20 }} />
+        <Feather name="crop" size={36} color="white" onPress={handleCrop} style={{ marginHorizontal: 40 }} />
+        <Feather name="save" size={36} color="white" onPress={handleSaveOriginal} style={{ marginHorizontal: 40 }} />
+        <Feather name="send" size={36} color="white" onPress={sendImageToProcess} style={{ marginHorizontal: 20 }} />
       </View>
     </SafeAreaView>
   );
@@ -307,10 +308,11 @@ const styles = StyleSheet.create({
     height: 70,
     borderRadius: 50,
   },
-  container2: {
+  cropContainer: {
     flex: 1,
     backgroundColor: "#000",
     alignItems: "center",
+    flexDirection: "column",
   },
   imageContainer: {
     width: "100%",
@@ -318,12 +320,14 @@ const styles = StyleSheet.create({
     position: "relative",
     overflow: "hidden",
     zIndex: 1,
+    flex: 2,
   },
   image: {
     width: "100%",
     height: "100%",
   },
   buttonContainer: {
+    flex: 0.1,
     padding: 20,
     flexDirection: 'row',
     justifyContent: 'space-around',

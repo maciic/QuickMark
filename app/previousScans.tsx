@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { View, FlatList, Text, Button, StyleSheet } from 'react-native';
+import { Image, View, FlatList, Text, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as FileSystem from 'expo-file-system';
-import { Entypo } from '@expo/vector-icons';
-
-import SimpleButton from '../components/simpleButton'; 
+import { Feather } from '@expo/vector-icons';
+ 
+import CircleButton from '../components/circleButton';
 
 export default function PreviousScans() {
   const router = useRouter();
@@ -33,11 +33,10 @@ export default function PreviousScans() {
     loadResults();
   }, []);
 
-  // Clear all saved scans
-  const clearAll = async () => {
+  // perform deletion after user confirms
+  const performClearAll = async () => {
     try {
       const fileUri = FileSystem.documentDirectory + 'QuickMark2/list-of-results.json';
-      // overwrite with empty array
       await FileSystem.writeAsStringAsync(fileUri, JSON.stringify([], null, 2));
       setResults([]);
     } catch (err) {
@@ -45,24 +44,34 @@ export default function PreviousScans() {
     }
   };
 
+  // prompt user before clearing
+  const clearAll = () => {
+    Alert.alert(
+      'Confirm Deletion',
+      'Are you sure you want to delete all previous scans?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: performClearAll },
+      ]
+    );
+  };
+
   const renderItem = ({ item, index }: { item: any; index: number }) => {
-    const examId = item.examId;
-    const studentId = item.studentId;
-    const pass = item.pass ? 'Yes' : 'No';
 
     return (
-      <View style={styles.row}>
-        <Text style={styles.cell}>{index + 1}</Text>
-        <Text style={styles.cell}>{examId}</Text>
-        <Text style={styles.cell}>{studentId}</Text>
-        <Text style={styles.cell}>{pass}</Text>
+      <View style={styles.listRow}>
+        <Text style={styles.listCell}>{index + 1}</Text>
+        <Text style={styles.listCell}>{item.examId}</Text>
+        <Text style={styles.listCell}>{item.studentId}</Text>
+        <View style={styles.listIcon}>
+          <Feather name={item.pass ? 'check-circle' : 'x'} size={24} color={item.pass ? 'green' : 'red'} />
+        </View>
       </View>
     );
   };
 
   return (
     <View style={styles.container}>
-      <Button title="Back" onPress={() => router.back()} />
 
       {/* Header row */}
       <View style={styles.headerRow}>
@@ -73,83 +82,110 @@ export default function PreviousScans() {
       </View>
 
       {loading ? (
+
         <Text>Loading…</Text>
+
       ) : results.length === 0 ? (
-        <Text>No previous scans found.</Text>
+
+        <View style={styles.emptyStateContainer}>
+
+          <Text style={styles.emptyStateText}>No previous scans found.</Text>
+          <Image 
+            style={{ width: "80%", opacity: 0.7, marginTop: 30}}
+            resizeMode="contain"
+            source={require('../assets/images/no-scanned-items-bg.png')}
+          />
+
+        </View>
+
       ) : (
+
         <FlatList
           data={results}
           keyExtractor={(_, i) => i.toString()}
           renderItem={renderItem}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={{marginTop: 8}}
         />
       )}
 
-      <View style={{ marginTop: 20 }}>
-        <SimpleButton title="Clear all" onPress={clearAll} />
+      <View style={styles.navigationContainer}>
+        <CircleButton
+          icon={<Feather name="corner-down-left" color="white" size={30} />}
+          onPress={() => router.back()}
+        />
+
+        <CircleButton
+          icon={<Feather name="trash-2" color="white" size={30} />}
+          onPress={results.length > 0 ? clearAll : () => {}}
+          color={results.length > 0 ? '#253353': '#4e5154'}
+        />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+
   container: {
     flex: 1,
     padding: 16,
     backgroundColor: '#fff',
   },
+
   headerRow: {
     flexDirection: 'row',
-    paddingVertical: 8,
+    paddingTop: 60,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderColor: '#ccc',
   },
+
   headerCell: {
     flex: 1,
     fontWeight: 'bold',
     textAlign: 'center',
+    fontSize: 16,
   },
-  list: {
-    marginTop: 8,
-  },
-  row: {
+
+  listRow: {
     flexDirection: 'row',
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderColor: '#eee',
   },
-  cell: {
+
+  listCell: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 14,
+    fontSize: 16,
   },
-  icon: {
-    borderRadius: 50,
-    width: 60,
-    height: 60,
+
+  listIcon: {
+    flex: 0.5,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f7f4ee',
-    marginRight: 10,
+    marginHorizontal: 20,
   },
 
-  item: {
-    marginBottom: 12,
-    padding: 12,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-    flexDirection: 'row'
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    flexDirection: 'column',
+    alignItems: 'center',
   },
 
-  title: {
+  emptyStateText: {
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 4,
+    textAlign: 'center',
+    marginVertical: 20,
   },
 
-  payload: {
-    fontFamily: 'monospace',
-    fontSize: 12,
+  navigationContainer: {
+    height: 70,
+    marginTop: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: "#fff",
   },
 });

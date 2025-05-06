@@ -1,12 +1,12 @@
 import { StyleSheet, View, Pressable, Text } from "react-native";
 
 type Props = {
-    title: string;
+    icon: React.ReactNode;
     onPress: () => void;
     color?: string;
 };
 
-export default function SimpleButton({ title, onPress, color }: Props) {
+export default function CircleButton({ icon, onPress, color }: Props) {
 
     const buttonStyle = [styles.button];
     const buttonContainerStyle = [styles.buttonContainer];
@@ -19,7 +19,7 @@ export default function SimpleButton({ title, onPress, color }: Props) {
     return (
         <View style={buttonContainerStyle}>
             <Pressable style={buttonStyle} onPress={onPress}>
-                <Text style={styles.buttonLabel}>{title}</Text>
+                <View style={styles.icon}>{icon}</View>
             </Pressable>
         </View>
 
@@ -33,8 +33,8 @@ const styles = StyleSheet.create({
         borderRadius: 60,
         alignItems: 'center',
         justifyContent: 'center',
-        height: 60,
-        width: 220,
+        height: 70,
+        width: 70,
         padding: 3,
     },
     button: {
@@ -46,8 +46,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
 
-    buttonLabel: {
-        color: '#f7f4ee',
-        fontSize: 15,
+    icon: {
+        
     },
 });
