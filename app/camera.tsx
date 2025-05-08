@@ -5,12 +5,11 @@ import { Image } from "expo-image";
 import { AntDesign, Entypo, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as ImageManipulator from 'expo-image-manipulator';
-import * as MediaLibrary from "expo-media-library";   
-import SimpleButton from '../components/simpleButton'; 
+import * as MediaLibrary from "expo-media-library";    
 
 // Import the frame-only overlay component and its Corners type
 import CropOverlayFrameOnly, { Corners } from '../components/CropOverlay'; // Adjust path if needed
-
+import TransparentButton from "../components/transparentButton";
 // Get screen dimensions
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
@@ -148,7 +147,7 @@ export default function App() {
       const result = await ImageManipulator.manipulateAsync(
         uri,
         [],
-        {compress: 0.1, format: ImageManipulator.SaveFormat.JPEG }
+        {compress: 0.2, format: ImageManipulator.SaveFormat.JPEG }
       );
 
       await MediaLibrary.createAssetAsync(result.uri);
@@ -215,10 +214,24 @@ export default function App() {
 
       {/* Controls */}
       <View style={styles.buttonContainer}>
-        <Feather name="corner-down-left" size={36} color="white" onPress={() => setPictureTaken(false)} style={{ marginHorizontal: 20 }} />
-        <Feather name="crop" size={36} color="white" onPress={handleCrop} style={{ marginHorizontal: 40 }} />
-        <Feather name="save" size={36} color="white" onPress={handleSaveOriginal} style={{ marginHorizontal: 40 }} />
-        <Feather name="send" size={36} color="white" onPress={sendImageToProcess} style={{ marginHorizontal: 20 }} />
+
+        <TransparentButton
+          onPress={() => setPictureTaken(false)}
+          icon={<Feather name="corner-down-left" size={36} color="white" />}
+        />
+        <TransparentButton
+          onPress={handleCrop}
+          icon={<Feather name="crop" size={36} color="white" />}
+        />
+        <TransparentButton
+          onPress={handleSaveOriginal}
+          icon={<Feather name="save" size={36} color="white" />}
+        />
+        <TransparentButton
+          onPress={sendImageToProcess}
+          icon={<Feather name="send" size={36} color="white" />}
+        />
+  
       </View>
     </SafeAreaView>
   );
@@ -242,13 +255,12 @@ export default function App() {
         responsiveOrientationWhenOrientationLocked
       >
         <View style={styles.shutterContainer}>
-          <Pressable onPress={toggleFlash}>
-            {flash === "off" ? (
-              <Entypo name="flash" size={32} color="gray" />
-            ) : (
-              <Entypo name="flash" size={32} color="white" />
-            )}
-          </Pressable>
+          <TransparentButton
+            onPress={() => router.back()}
+            icon={<AntDesign name="close" size={35} color="white" />}
+          />
+          
+          
           <Pressable onPress={takePicture}>
             {({ pressed }) => (
               <View style={[styles.shutterBtn, { opacity: pressed ? 0.5 : 1 }]}>
@@ -256,9 +268,16 @@ export default function App() {
               </View>
             )}
           </Pressable>
-          <Pressable onPress={() => router.back()}>
-            <AntDesign name="close" size={32} color="white" />
-          </Pressable>
+
+          <TransparentButton
+            onPress={toggleFlash}
+            icon = {flash === "off" ? (
+              <Entypo name="flash" size={35} color="gray" />
+            ) : (
+              <Entypo name="flash" size={35} color="white" />
+            )}
+          />
+
         </View>
       </CameraView>
 
@@ -285,13 +304,13 @@ const styles = StyleSheet.create({
   },
   shutterContainer: {
     position: "absolute",
-    bottom: 44,
+    bottom: 25,
     left: 0,
     width: "100%",
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingHorizontal: 30,
+    paddingHorizontal: 40,
   },
   shutterBtn: {
     backgroundColor: "transparent",
@@ -313,14 +332,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#000",
     alignItems: "center",
     flexDirection: "column",
+    width: "100%",
+    height: "100%",
   },
   imageContainer: {
     width: "100%",
     aspectRatio: 9 / 16,    // match preview aspect ratio
-    position: "relative",
-    overflow: "hidden",
     zIndex: 1,
-    flex: 2,
+    flex: 1,
   },
   image: {
     width: "100%",
@@ -328,8 +347,10 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flex: 0.1,
-    padding: 20,
+    paddingHorizontal: 20,
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: "100%",
   },
 });
