@@ -20,13 +20,21 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.maciic.QuickMark2"
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f6b687c6-7ae7-4086-950a-ded4923df2b8"
+      }
+    },
+    "owner": "maciic"
   }
 }

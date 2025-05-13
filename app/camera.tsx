@@ -147,7 +147,7 @@ export default function App() {
       const result = await ImageManipulator.manipulateAsync(
         uri,
         [],
-        {compress: 0.2, format: ImageManipulator.SaveFormat.JPEG }
+        {compress: 0.5, format: ImageManipulator.SaveFormat.JPEG }
       );
 
       await MediaLibrary.createAssetAsync(result.uri);
