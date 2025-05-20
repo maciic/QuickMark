@@ -4,8 +4,8 @@ import { Button, Pressable, StyleSheet, SafeAreaView, Dimensions, Alert, Text, V
 import { Image } from "expo-image";
 import { AntDesign, Entypo, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import * as ImageManipulator from 'expo-image-manipulator';
-import * as MediaLibrary from "expo-media-library";    
+import { SaveFormat, manipulateAsync, ImageManipulator } from "expo-image-manipulator";
+import * as MediaLibrary from "expo-media-library";
 
 // Import the frame-only overlay component and its Corners type
 import CropOverlayFrameOnly, { Corners } from '../components/CropOverlay'; // Adjust path if needed
@@ -13,6 +13,7 @@ import TransparentButton from "../components/transparentButton";
 // Get screen dimensions
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
+
 
 export default function App() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -115,7 +116,7 @@ export default function App() {
       const result = await ImageManipulator.manipulateAsync(
         uri,
         [{ crop: cropRegion }],
-        {compress: 0.1, format: ImageManipulator.SaveFormat.JPEG }
+        { compress: 0.1, format: ImageManipulator.SaveFormat.JPEG }
       );
       setCroppedUri(result.uri);
 
@@ -133,24 +134,29 @@ export default function App() {
     }
   };
 
+
   const handleSaveOriginal = async () => {
     if (!uri) return;
 
     const { status } = await MediaLibrary.requestPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission required", "Need permission to save images.");
-      return;
-    }
 
-    try {
+   if (status !== "granted") {
+     Alert.alert("Permission required", "Need permission to save images.");
+     return;
+   }
 
-      const result = await ImageManipulator.manipulateAsync(
-        uri,
+   try {
+     const manipulated = await manipulateAsync(
+       uri,
         [],
-        {compress: 0.5, format: ImageManipulator.SaveFormat.JPEG }
+        {
+          compress: 0.5,
+          format: SaveFormat.JPEG,
+        }
       );
 
-      await MediaLibrary.createAssetAsync(result.uri);
+      await MediaLibrary.saveToLibraryAsync(manipulated.uri);
+
       Alert.alert("Saved", "Original image saved to your gallery.");
     } catch (err) {
       console.error("Save failed:", err);
@@ -160,7 +166,7 @@ export default function App() {
 
   const sendImageToProcess = async () => {
     if (!uri) return;
-  
+
     try {
       /*
       // upload to your server
@@ -177,8 +183,8 @@ export default function App() {
       const data = await res.json();
       */
       // For demo purposes, we will just simulate a successful response
-      const data = {examId: "XYZ987", studentId: "Abc123", pass: true}; // Replace with actual response from your server
-      
+      const data = { examId: "XYZ987", studentId: "Abc123", pass: true }; // Replace with actual response from your server
+
       // navigate to result.tsx with the returned data
       router.push({
         pathname: "/result",
@@ -193,6 +199,7 @@ export default function App() {
   };
 
   const cropImageView = () => (
+    
     <SafeAreaView style={styles.cropContainer}>
       {/* Container for the image and overlay */}
       <View style={styles.imageContainer}>
@@ -231,7 +238,7 @@ export default function App() {
           onPress={sendImageToProcess}
           icon={<Feather name="send" size={36} color="white" />}
         />
-  
+
       </View>
     </SafeAreaView>
   );
@@ -259,8 +266,8 @@ export default function App() {
             onPress={() => router.back()}
             icon={<AntDesign name="close" size={35} color="white" />}
           />
-          
-          
+
+
           <Pressable onPress={takePicture}>
             {({ pressed }) => (
               <View style={[styles.shutterBtn, { opacity: pressed ? 0.5 : 1 }]}>
@@ -271,7 +278,7 @@ export default function App() {
 
           <TransparentButton
             onPress={toggleFlash}
-            icon = {flash === "off" ? (
+            icon={flash === "off" ? (
               <Entypo name="flash" size={35} color="gray" />
             ) : (
               <Entypo name="flash" size={35} color="white" />
