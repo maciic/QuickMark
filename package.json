@@ -22,7 +22,8 @@
     "react-native": "0.79.2",
     "react-native-reanimated": "~3.17.4",
     "expo-file-system": "~18.1.9",
-    "expo-dev-client": "~5.1.8"
+    "expo-dev-client": "~5.1.8",
+    "expo-screen-orientation": "~8.1.6"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",

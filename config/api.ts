@@ -1,0 +1,1 @@
+export const UPLOAD_URL = "https://your-server-endpoint.com/upload";

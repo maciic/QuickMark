@@ -1,4 +1,4 @@
-import { StyleSheet, Pressable, View } from "react-native";
+import { StyleSheet, Pressable } from "react-native";
 
 type Props = {
   icon: React.ReactNode;
@@ -11,7 +11,7 @@ export default function TransparentButton({ icon, onPress }: Props) {
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
-        pressed && { backgroundColor: "#4e5154" },
+        pressed && styles.pressed, // only applied when pressed === true
       ]}
     >
       {icon}
@@ -20,12 +20,14 @@ export default function TransparentButton({ icon, onPress }: Props) {
 }
 
 const styles = StyleSheet.create({
-
   button: {
-    backgroundColor: "", // default
+    backgroundColor: "transparent", // ← use a valid default
     borderRadius: 50,
     alignItems: "center",
     justifyContent: "center",
     padding: 10,
+  },
+  pressed: {
+    backgroundColor: "#4e5154",
   },
 });

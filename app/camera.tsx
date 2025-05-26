@@ -1,31 +1,25 @@
 import { CameraView, FlashMode, useCameraPermissions } from "expo-camera";
 import { useRef, useState, useEffect } from "react";
-import { Button, Pressable, StyleSheet, SafeAreaView, Dimensions, Alert, Text, View, Image as RNImage } from "react-native";
+import { Button, Pressable, StyleSheet, SafeAreaView, Alert, Text, View, Image as RNImage } from "react-native";
 import { Image } from "expo-image";
 import { AntDesign, Entypo, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useIsFocused } from '@react-navigation/native';
 import { SaveFormat, manipulateAsync, ImageManipulator } from "expo-image-manipulator";
 import * as MediaLibrary from "expo-media-library";
+import { UPLOAD_URL } from "../config/api";
 
-// Import the frame-only overlay component and its Corners type
-import CropOverlayFrameOnly, { Corners } from '../components/CropOverlay'; // Adjust path if needed
 import TransparentButton from "../components/transparentButton";
-// Get screen dimensions
-const windowWidth = Dimensions.get('window').width;
-const windowHeight = Dimensions.get('window').height;
 
 
 export default function App() {
+  const isFocused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
   const ref = useRef<CameraView>(null);
   const [uri, setUri] = useState<any>(null);
   const [flash, setFlash] = useState<FlashMode>("off");
   const router = useRouter();
   const [pictureTaken, setPictureTaken] = useState<boolean>(false);
-
-  // State to hold the latest corner coordinates received from the overlay
-  const [cropCorners, setCropCorners] = useState<Corners | null>(null);
-  const [croppedUri, setCroppedUri] = useState<string | null>(null);  // <-- added
 
   // Refs for coordinate transformation
   const originalImageSize = useRef<{ width: number; height: number } | null>(null);
@@ -45,6 +39,17 @@ export default function App() {
       );
     }
   }, [uri]);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    if (isFocused) {
+      // screen has come back into focus → resume preview
+      ref.current.resumePreview?.();
+    } else {
+      // screen is going out of focus → pause preview
+      ref.current.pausePreview?.();
+    }
+  }, [isFocused]);
 
   if (!permission) {
     return null;
@@ -72,65 +77,21 @@ export default function App() {
     setFlash((flash) => (flash === "off" ? "on" : "off"));
   };
 
-  const handleLayoutChange = (currentCorners: Corners) => {
-    setCropCorners(currentCorners); // Update local state
-  };
-
-  const handleCrop = async () => {
-
-    // --- Coordinate Transformation Logic (Same as before) ---
-    if (
-      !originalImageSize.current ||
-      !displayedImageLayout.current ||
-      !cropCorners
-    ) {
-      Alert.alert("Error", "Missing image or crop data for cropping.");
-      return;
-    }
-    const origWidth = originalImageSize.current.width;
-    const origHeight = originalImageSize.current.height;
-    const displayWidth = displayedImageLayout.current.width;
-    const displayHeight = displayedImageLayout.current.height;
-    const displayX = displayedImageLayout.current.x;
-    const displayY = displayedImageLayout.current.y;
-    const scaleX = origWidth / displayWidth;
-    const scaleY = origHeight / displayHeight;
-    const scale = Math.min(scaleX, scaleY);   // ← use “contain” on Android
-    const actualDisplayWidth = origWidth / scale;
-    const actualDisplayHeight = origHeight / scale;
-    const offsetX = displayX + (displayWidth - actualDisplayWidth) / 2;
-    const offsetY = displayY + (displayHeight - actualDisplayHeight) / 2;
-    const cropOriginX = (cropCorners.topLeft.x - offsetX) * scale;
-    const cropOriginY = (cropCorners.topLeft.y - offsetY) * scale;
-    const cropWidth = Math.abs(cropCorners.topRight.x - cropCorners.topLeft.x) * scale;
-    const cropHeight = Math.abs(cropCorners.bottomLeft.y - cropCorners.topLeft.y) * scale;
-    const cropRegion = {
-      originX: Math.max(0, Math.round(cropOriginX)),
-      originY: Math.max(0, Math.round(cropOriginY)),
-      width: Math.max(1, Math.round(cropWidth)),
-      height: Math.max(1, Math.round(cropHeight)),
-    };
-    // --- End Coordinate Transformation ---
+  const handleRotate = async () => {
+    if (!uri) return;
 
     try {
-      const result = await ImageManipulator.manipulateAsync(
+      const manipulated = await manipulateAsync(
         uri,
-        [{ crop: cropRegion }],
-        { compress: 0.1, format: ImageManipulator.SaveFormat.JPEG }
+        [{ rotate: 90 }],
+        {
+          format: SaveFormat.JPEG,
+        }
       );
-      setCroppedUri(result.uri);
-
-      // immediately save the cropped image
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status === "granted") {
-        await MediaLibrary.createAssetAsync(result.uri);
-        Alert.alert("Success", "Cropped image saved to your gallery.");
-      } else {
-        Alert.alert("Permission required", "Need permission to save cropped image.");
-      }
-    } catch (error) {
-      console.error("Could not crop image:", error);
-      Alert.alert("Error", "Failed to crop and save the image.");
+      setUri(manipulated.uri);
+    } catch (err) {
+      console.error("Rotation failed:", err);
+      Alert.alert("Error", "Could not rotate image.");
     }
   };
 
@@ -150,7 +111,7 @@ export default function App() {
        uri,
         [],
         {
-          compress: 0.5,
+          compress: 0.1,
           format: SaveFormat.JPEG,
         }
       );
@@ -168,12 +129,12 @@ export default function App() {
     if (!uri) return;
 
     try {
-      /*
+      
       // upload to your server
       const formData = new FormData();
       formData.append("file", await (await fetch(uri)).blob(), "image.jpg");
-  
-      const res = await fetch("https://your-server-endpoint.com/upload", {
+
+      const res = await fetch(UPLOAD_URL, {
         method: "POST",
         body: formData,
       });
@@ -181,9 +142,9 @@ export default function App() {
   
       // assume JSON { processedUri: string, ... }
       const data = await res.json();
-      */
+      
       // For demo purposes, we will just simulate a successful response
-      const data = { examId: "XYZ987", studentId: "Abc123", pass: true }; // Replace with actual response from your server
+      //const data = { examId: "XYZ987", studentId: "Abc123", pass: true }; // Replace with actual response from your server
 
       // navigate to result.tsx with the returned data
       router.push({
@@ -192,6 +153,7 @@ export default function App() {
       });
 
       setPictureTaken(false); // Reset the camera view
+
     } catch (error) {
       console.error("Error sending image:", error);
       Alert.alert("Error", "Failed to send image.");
@@ -206,16 +168,9 @@ export default function App() {
         {/* Display the background image */}
         <Image
           source={{ uri }}
-          contentFit="cover"
-          style={styles.image}                      // ← 9:16 aspect ratio
+          style={styles.image}
           onLayout={(e) => { displayedImageLayout.current = e.nativeEvent.layout; }}
           onError={(e) => Alert.alert("Error", "Failed to load image.")}
-        />
-
-        {/* Render the frame-only overlay, passing the callback */}
-        <CropOverlayFrameOnly
-          onLayoutChange={handleLayoutChange}
-        // You can still pass initialCorners or styling props here if needed
         />
       </View>
 
@@ -227,8 +182,8 @@ export default function App() {
           icon={<Feather name="corner-down-left" size={36} color="white" />}
         />
         <TransparentButton
-          onPress={handleCrop}
-          icon={<Feather name="crop" size={36} color="white" />}
+          onPress={handleRotate}
+          icon={<Feather name="rotate-ccw" size={36} color="white" />}
         />
         <TransparentButton
           onPress={handleSaveOriginal}
@@ -245,52 +200,49 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      {/* Camera is rendered from the start, but hidden until a picture is taken*/}
-      <CameraView
-        style={[
-          styles.camera,
-          {
+      {/* only render the live preview when focused */}
+      {isFocused && (
+        <CameraView
+          ref={ref}
+          style={[ styles.camera, {
             opacity: pictureTaken ? 0.3 : 1,
-            zIndex: pictureTaken ? 0 : 1
-          }
-        ]}
-
-        ref={ref}
-        flash={flash}
-        mute
-        ratio="16:9"
-        responsiveOrientationWhenOrientationLocked
-      >
-        <View style={styles.shutterContainer}>
-          <TransparentButton
-            onPress={() => router.back()}
-            icon={<AntDesign name="close" size={35} color="white" />}
-          />
+            zIndex: pictureTaken ? 0 : 1,
+          } ]}
+          flash={flash}
+          mute
+          ratio="16:9"
+          responsiveOrientationWhenOrientationLocked
+        >
+          <View style={styles.shutterContainer}>
+            <TransparentButton
+              onPress={() => router.back()}
+              icon={<AntDesign name="close" size={35} color="white" />}
+            />
 
 
-          <Pressable onPress={takePicture}>
-            {({ pressed }) => (
-              <View style={[styles.shutterBtn, { opacity: pressed ? 0.5 : 1 }]}>
-                <View style={[styles.shutterBtnInner, { backgroundColor: "white" }]} />
-              </View>
-            )}
-          </Pressable>
+            <Pressable onPress={takePicture}>
+              {({ pressed }) => (
+                <View style={[styles.shutterBtn, { opacity: pressed ? 0.5 : 1 }]}>
+                  <View style={[styles.shutterBtnInner, { backgroundColor: "white" }]} />
+                </View>
+              )}
+            </Pressable>
 
-          <TransparentButton
-            onPress={toggleFlash}
-            icon={flash === "off" ? (
-              <Entypo name="flash" size={35} color="gray" />
-            ) : (
-              <Entypo name="flash" size={35} color="white" />
-            )}
-          />
+            <TransparentButton
+              onPress={toggleFlash}
+              icon={flash === "off" ? (
+                <Entypo name="flash" size={35} color="gray" />
+              ) : (
+                <Entypo name="flash" size={35} color="white" />
+              )}
+            />
 
-        </View>
-      </CameraView>
+          </View>
+        </CameraView>
+      )}
 
-      {/* Only show crop UI on top once a picture is taken */}
+      {/* your crop UI */}
       {pictureTaken && cropImageView()}
-
     </View>
   );
 }
@@ -344,13 +296,13 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: "100%",
-    aspectRatio: 9 / 16,    // match preview aspect ratio
     zIndex: 1,
     flex: 1,
   },
   image: {
     width: "100%",
     height: "100%",
+    resizeMode: "contain",
   },
   buttonContainer: {
     flex: 0.1,
