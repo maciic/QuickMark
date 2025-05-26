@@ -5,9 +5,9 @@ import { Image } from "expo-image";
 import { AntDesign, Entypo, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useIsFocused } from '@react-navigation/native';
-import { SaveFormat, manipulateAsync, ImageManipulator } from "expo-image-manipulator";
+import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import * as MediaLibrary from "expo-media-library";
-import { UPLOAD_URL } from "../config/api";
+import { UPLOAD_URL, IMAGE_NAME } from "../config/api";
 
 import TransparentButton from "../components/transparentButton";
 
@@ -20,6 +20,7 @@ export default function App() {
   const [flash, setFlash] = useState<FlashMode>("off");
   const router = useRouter();
   const [pictureTaken, setPictureTaken] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Refs for coordinate transformation
   const originalImageSize = useRef<{ width: number; height: number } | null>(null);
@@ -77,16 +78,14 @@ export default function App() {
     setFlash((flash) => (flash === "off" ? "on" : "off"));
   };
 
-  const handleRotate = async () => {
+  const handleRotate = async (angle: number) => {
     if (!uri) return;
 
     try {
       const manipulated = await manipulateAsync(
         uri,
-        [{ rotate: 90 }],
-        {
-          format: SaveFormat.JPEG,
-        }
+        [{ rotate: angle }],
+        { format: SaveFormat.JPEG }
       );
       setUri(manipulated.uri);
     } catch (err) {
@@ -101,14 +100,14 @@ export default function App() {
 
     const { status } = await MediaLibrary.requestPermissionsAsync();
 
-   if (status !== "granted") {
-     Alert.alert("Permission required", "Need permission to save images.");
-     return;
-   }
+    if (status !== "granted") {
+      Alert.alert("Permission required", "Need permission to save images.");
+      return;
+    }
 
-   try {
-     const manipulated = await manipulateAsync(
-       uri,
+    try {
+      const manipulated = await manipulateAsync(
+        uri,
         [],
         {
           compress: 0.1,
@@ -127,41 +126,60 @@ export default function App() {
 
   const sendImageToProcess = async () => {
     if (!uri) return;
+    setErrorMessage(null);
 
     try {
-      
-      // upload to your server
+      const response = await fetch(uri);
+      const blob = await response.blob();
+
       const formData = new FormData();
-      formData.append("file", await (await fetch(uri)).blob(), "image.jpg");
+      formData.append("file", blob, IMAGE_NAME);
 
       const res = await fetch(UPLOAD_URL, {
         method: "POST",
         body: formData,
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  
-      // assume JSON { processedUri: string, ... }
-      const data = await res.json();
-      
-      // For demo purposes, we will just simulate a successful response
-      //const data = { examId: "XYZ987", studentId: "Abc123", pass: true }; // Replace with actual response from your server
 
-      // navigate to result.tsx with the returned data
+      const text = await res.text();
+
+      if (!res.ok) {
+        let message = text;
+        try {
+          const errorJson = JSON.parse(text);
+          message = errorJson.error || errorJson.message || JSON.stringify(errorJson);
+        } catch {
+          // text is not JSON
+        }
+
+        // Catch and show 500 or other server errors
+        setErrorMessage(`Error ${res.status}: ${message}`);
+        return;
+      }
+
+      // Parse response JSON
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        setErrorMessage("Invalid JSON response");
+        return;
+      }
+
+      // Navigate to result screen with the response data
       router.push({
         pathname: "/result",
-        params: { payload: JSON.stringify(data) }
+        params: { payload: JSON.stringify(data) }, // adjust if you're using React Navigation or Next.js
       });
 
-      setPictureTaken(false); // Reset the camera view
-
-    } catch (error) {
-      console.error("Error sending image:", error);
-      Alert.alert("Error", "Failed to send image.");
+      setPictureTaken(false);
+    } catch (err: any) {
+      console.error("Error sending image:", err);
+      setErrorMessage(err.message || "Network error");
     }
   };
 
-  const cropImageView = () => (
-    
+  const imagePreview = () => (
+
     <SafeAreaView style={styles.cropContainer}>
       {/* Container for the image and overlay */}
       <View style={styles.imageContainer}>
@@ -181,14 +199,19 @@ export default function App() {
           onPress={() => setPictureTaken(false)}
           icon={<Feather name="corner-down-left" size={36} color="white" />}
         />
+
+        {/* rotate 90° CCW */}
         <TransparentButton
-          onPress={handleRotate}
+          onPress={() => handleRotate(-90)}
           icon={<Feather name="rotate-ccw" size={36} color="white" />}
         />
+
+        {/* rotate 90° CW */}
         <TransparentButton
-          onPress={handleSaveOriginal}
-          icon={<Feather name="save" size={36} color="white" />}
+          onPress={() => handleRotate(90)}
+          icon={<Feather name="rotate-cw" size={36} color="white" />}
         />
+
         <TransparentButton
           onPress={sendImageToProcess}
           icon={<Feather name="send" size={36} color="white" />}
@@ -200,14 +223,17 @@ export default function App() {
 
   return (
     <View style={styles.container}>
+      {errorMessage != null && (
+        <Text style={styles.errorText}>{errorMessage}</Text>
+      )}
       {/* only render the live preview when focused */}
       {isFocused && (
         <CameraView
           ref={ref}
-          style={[ styles.camera, {
+          style={[styles.camera, {
             opacity: pictureTaken ? 0.3 : 1,
             zIndex: pictureTaken ? 0 : 1,
-          } ]}
+          }]}
           flash={flash}
           mute
           ratio="16:9"
@@ -242,7 +268,7 @@ export default function App() {
       )}
 
       {/* your crop UI */}
-      {pictureTaken && cropImageView()}
+      {pictureTaken && imagePreview()}
     </View>
   );
 }
@@ -311,5 +337,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     width: "100%",
+  },
+  errorText: {
+    color: "red",
+    padding: 8,
+    textAlign: "center",
   },
 });
