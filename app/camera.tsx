@@ -129,52 +129,49 @@ export default function App() {
     setErrorMessage(null);
 
     try {
+      // get the file blob
       const response = await fetch(uri);
       const blob = await response.blob();
 
+      // prepare form data
       const formData = new FormData();
       formData.append("file", blob, IMAGE_NAME);
 
+      // send to server
       const res = await fetch(UPLOAD_URL, {
         method: "POST",
         body: formData,
       });
 
+      // read raw text
       const text = await res.text();
 
-      if (!res.ok) {
-        let message = text;
-        try {
-          const errorJson = JSON.parse(text);
-          message = errorJson.error || errorJson.message || JSON.stringify(errorJson);
-        } catch {
-          // text is not JSON
-        }
-
-        // Catch and show 500 or other server errors
-        setErrorMessage(`Error ${res.status}: ${message}`);
-        return;
-      }
-
-      // Parse response JSON
-      let data;
+      // parse JSON (or bail)
+      let data: any;
       try {
         data = JSON.parse(text);
-      } catch (e) {
-        setErrorMessage("Invalid JSON response");
+      } catch {
+        Alert.alert("Error", "Invalid JSON response from server.");
         return;
       }
 
-      // Navigate to result screen with the response data
+      // handle HTTP errors or payload‐level errors
+      if (!res.ok || data.Error) {
+        const msg = data.ErrorCode || data.error || data.message || `HTTP ${res.status}`;
+        Alert.alert("Error", msg);
+        return;
+      }
+
+      // success → navigate with payload
       router.push({
         pathname: "/result",
-        params: { payload: JSON.stringify(data) }, // adjust if you're using React Navigation or Next.js
+        params: { payload: JSON.stringify(data) },
       });
-
       setPictureTaken(false);
+
     } catch (err: any) {
-      console.error("Error sending image:", err);
-      setErrorMessage(err.message || "Network error");
+      console.log("Error sending image:", err);
+      Alert.alert("Network Error", err.message || "An unexpected error occurred.");
     }
   };
 

@@ -61,11 +61,10 @@ export default function PreviousScans() {
     return (
       <View style={styles.listRow}>
         <Text style={styles.listCell}>{index + 1}</Text>
+        <Text style={styles.listCell}>{item.correctAnswers}</Text>
         <Text style={styles.listCell}>{item.examId}</Text>
-        <Text style={styles.listCell}>{item.studentId}</Text>
-        <View style={styles.listIcon}>
-          <Feather name={item.pass ? 'check-circle' : 'x'} size={24} color={item.pass ? 'green' : 'red'} />
-        </View>
+        <Text style={styles.listCell}>{item.examineeNeptunCode}</Text>
+        <Text style={styles.listCell}>{item.userUsername}</Text>
       </View>
     );
   };
@@ -75,10 +74,11 @@ export default function PreviousScans() {
 
       {/* Header row */}
       <View style={styles.headerRow}>
-        <Text style={styles.headerCell}>#</Text>
-        <Text style={styles.headerCell}>Exam ID</Text>
-        <Text style={styles.headerCell}>Student ID</Text>
-        <Text style={styles.headerCell}>Pass</Text>
+        <Text style={[styles.headerCell, { flex: 0.2 }]}>#</Text>
+        <Text style={[styles.headerCell, { flex: 0.2 }]}>Correct</Text>
+        <Text style={[styles.headerCell, { flex: 0.2 }]}>Exam ID</Text>
+        <Text style={[styles.headerCell, { flex: 0.2 }]}>Neptun code</Text>
+        <Text style={[styles.headerCell, { flex: 0.2 }]}>Name</Text>
       </View>
 
       {loading ? (
@@ -141,7 +141,6 @@ const styles = StyleSheet.create({
   },
 
   headerCell: {
-    flex: 1,
     fontWeight: 'bold',
     textAlign: 'center',
     fontSize: 16,
@@ -155,16 +154,9 @@ const styles = StyleSheet.create({
   },
 
   listCell: {
-    flex: 1,
+    flex: 0.2,
     textAlign: 'center',
     fontSize: 16,
-  },
-
-  listIcon: {
-    flex: 0.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 20,
   },
 
   emptyStateContainer: {

@@ -40,10 +40,10 @@ export default function Result() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Processed Result</Text>
+      <Text style={styles.heading}>Correct Answers</Text>
 
-      <View style={styles.passIcon}>
-        <Feather name={data.pass ? 'check-circle' : 'x'} size={160} color={data.pass ? 'green' : 'red'} />
+      <View style={styles.passContainer}>
+        <Text style={styles.passText}>{data.correctAnswers}</Text>
       </View>
 
       {data && (
@@ -53,12 +53,12 @@ export default function Result() {
             <Text style={styles.value}>{data.examId}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.label}>Student ID:</Text>
-            <Text style={styles.value}>{data.studentId}</Text>
+            <Text style={styles.label}>Neptun code:</Text>
+            <Text style={styles.value}>{data.examineeNeptunCode}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.label}>Pass:</Text>
-            <Text style={styles.value}>{data.pass ? "Yes" : "No"}</Text>
+            <Text style={styles.label}>Student name:</Text>
+            <Text style={styles.value}>{data.userUsername}</Text>
           </View>
         </View>
       )}
@@ -69,6 +69,14 @@ export default function Result() {
 }
 
 const styles = StyleSheet.create({
+  passText: {
+    fontSize: 88,
+    fontWeight: "bold",
+    color: "#253353",
+    textAlign: "center",
+    marginBottom: 24,
+  },
+
   container: {
     flex: 1,
     justifyContent: "center",
@@ -88,7 +96,7 @@ const styles = StyleSheet.create({
   resultBox: {
     width: "80%",
     padding: 16,
-    marginBottom: 24,
+    marginBottom: 64,
     backgroundColor: "#f0f0f0",
     borderRadius: 8,
   },
@@ -106,7 +114,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#000",
   },
-  passIcon: {
-    marginVertical: 24,
+  passContainer: {
+    marginVertical: 20,
   },
 });
